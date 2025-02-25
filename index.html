@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация на вечеринки</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            padding: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .dark-theme {
+            background-color: #212121;
+            color: #fff;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .party-list {
+            margin-bottom: 20px;
+        }
+        
+        .party-card {
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        
+        .dark-theme .party-card {
+            background-color: #333;
+        }
+        
+        .party-card:hover {
+            transform: translateY(-3px);
+        }
+        
+        .party-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .party-date, .party-location, .party-description {
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .party-description {
+            margin-bottom: 15px;
+        }
+        
+        button {
+            background-color: #389ce9;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background-color: #2d88d3;
+        }
+        
+        .form-container {
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .dark-theme .form-container {
+            background-color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        .dark-theme input, .dark-theme select, .dark-theme textarea {
+            background-color: #212121;
+            border-color: #444;
+            color: #fff;
+        }
+        
+        .success-message {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Регистрация на вечеринки</h1>
+        <p>Выберите событие из списка ниже</p>
+    </div>
+
+    <div class="party-list" id="partyList">
+        <!-- Здесь будут динамически добавляться карточки вечеринок -->
+    </div>
+
+    <div class="form-container" id="registrationForm">
+        <h2 id="formTitle">Регистрация на вечеринку</h2>
+        <div class="form-group">
+            <label for="name">Имя и Фамилия</label>
+            <input type="text" id="name" placeholder="Введите ваше имя и фамилию" required>
+        </div>
+        <div class="form-group">
+            <label for="phone">Телефон</label>
+            <input type="tel" id="phone" placeholder="+7XXXXXXXXXX" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="example@mail.ru" required>
+        </div>
+        <div class="form-group">
+            <label for="guests">Количество гостей</label>
+            <select id="guests">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5+">5 и более</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="comments">Комментарии</label>
+            <textarea id="comments" rows="3" placeholder="Дополнительная информация"></textarea>
+        </div>
+        <button type="button" id="submitBtn">Зарегистрироваться</button>
+        <button type="button" id="backBtn" style="margin-top: 10px; background-color: #6c757d;">Назад к списку</button>
+    </div>
+
+    <div class="success-message" id="successMessage">
+        Вы успешно зарегистрировались на мероприятие!
+    </div>
+
+    <script>
+        // Инициализация Telegram Mini App
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        // Применение темы Telegram
+        if (tg.colorScheme === 'dark') {
+            document.body.classList.add('dark-theme');
+        }
+        
+        // Данные о вечеринках (в реальном приложении будут загружаться с сервера)
+        const parties = [
+            {
+                id: 1,
+                title: "Новогодняя вечеринка",
+                date: "31.12.2024, 22:00",
+                location: "Клуб «Космос», ул. Ленина, 20",
+                description: "Встречаем Новый Год в кругу друзей с шампанским и фейерверками!"
+            },
+            {
+                id: 2,
+                title: "Пенная вечеринка",
+                date: "15.06.2024, 18:00",
+                location: "Пляжный клуб «Волна», Набережная, 5",
+                description: "Лето, пена, музыка и безудержное веселье на открытом воздухе!"
+            },
+            {
+                id: 3,
+                title: "Тематическая вечеринка 80-х",
+                date: "20.05.2024, 20:00",
+                location: "Ретро-бар «Винил», пр. Победы, 10",
+                description: "Яркие костюмы, диско-музыка и атмосфера беззаботных 80-х!"
+            }
+        ];
+        
+        // Отображение списка вечеринок
+        function renderPartyList() {
+            const partyListContainer = document.getElementById('partyList');
+            partyListContainer.innerHTML = '';
+            
+            parties.forEach(party => {
+                const partyCard = document.createElement('div');
+                partyCard.className = 'party-card';
+                partyCard.innerHTML = `
+                    <div class="party-title">${party.title}</div>
+                    <div class="party-date">📅 ${party.date}</div>
+                    <div class="party-location">📍 ${party.location}</div>
+                    <div class="party-description">${party.description}</div>
+                    <button class="register-btn" data-id="${party.id}">Зарегистрироваться</button>
+                `;
+                partyListContainer.appendChild(partyCard);
+            });
+            
+            // Добавление обработчиков для кнопок регистрации
+            document.querySelectorAll('.register-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const partyId = this.getAttribute('data-id');
+                    showRegistrationForm(partyId);
+                });
+            });
+        }
+        
+        // Показать форму регистрации
+        function showRegistrationForm(partyId) {
+            const party = parties.find(p => p.id == partyId);
+            document.getElementById('partyList').style.display = 'none';
+            document.getElementById('registrationForm').style.display = 'block';
+            document.getElementById('formTitle').textContent = `Регистрация: ${party.title}`;
+            
+            // Сохраняем ID вечеринки для формы
+            document.getElementById('registrationForm').setAttribute('data-party-id', partyId);
+        }
+        
+        // Обработчик кнопки "Назад"
+        document.getElementById('backBtn').addEventListener('click', function() {
+            document.getElementById('partyList').style.display = 'block';
+            document.getElementById('registrationForm').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        });
+        
+        // Обработчик отправки формы
+        document.getElementById('submitBtn').addEventListener('click', function() {
+            // Валидация формы
+            const name = document.getElementById('name').value;
+            const phone = document.getElementById('phone').value;
+            const email = document.getElementById('email').value;
+            
+            if (!name || !phone || !email) {
+                alert('Пожалуйста, заполните все обязательные поля');
+                return;
+            }
+            
+            // Сбор данных формы
+            const partyId = document.getElementById('registrationForm').getAttribute('data-party-id');
+            const guests = document.getElementById('guests').value;
+            const comments = document.getElementById('comments').value;
+            
+            // Создание объекта с данными для отправки
+            const formData = {
+                partyId,
+                name,
+                phone,
+                email,
+                guests,
+                comments
+            };
+            
+            // В реальном приложении здесь был бы запрос к серверу
+            console.log('Отправка данных:', formData);
+            
+            // Имитация отправки на сервер
+            setTimeout(() => {
+                // Показываем сообщение об успехе
+                document.getElementById('registrationForm').style.display = 'none';
+                document.getElementById('successMessage').style.display = 'block';
+                
+                // Отправка данных в Telegram
+                if (tg.isExpanded) {
+                    const party = parties.find(p => p.id == partyId);
+                    tg.sendData(JSON.stringify({
+                        action: 'register',
+                        party: party.title,
+                        userData: formData
+                    }));
+                }
+                
+                // Очистка формы
+                document.getElementById('name').value = '';
+                document.getElementById('phone').value = '';
+                document.getElementById('email').value = '';
+                document.getElementById('guests').value = '1';
+                document.getElementById('comments').value = '';
+                
+                // Возврат к списку через 3 секунды
+                setTimeout(() => {
+                    document.getElementById('partyList').style.display = 'block';
+                    document.getElementById('successMessage').style.display = 'none';
+                }, 3000);
+            }, 1000);
+        });
+        
+        // Инициализация приложения
+        window.onload = function() {
+            renderPartyList();
+            
+            // Сообщаем Telegram, что приложение готово
+            tg.ready();
+        };
+    </script>
+</body>
+</html>
